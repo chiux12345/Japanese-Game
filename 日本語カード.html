@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>⚔️ 勇者挑戰龍 JLPT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+JP:wght@400;700&family=Noto+Sans+TC:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --lc:#22c55e; --lc-bg:rgba(34,197,94,.12); }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    body{
+      background:#0a0a1e;
+      display:flex;flex-direction:column;align-items:center;
+      min-height:100dvh;
+      font-family:'Noto Sans TC','Inter',sans-serif;
+      overflow-x:hidden;
+    }
+    .wrap{width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;}
+
+    /* ── Level tabs ── */
+    .cat-scroll{width:calc(100% + 0px);overflow-x:auto;scrollbar-width:none;padding:10px 12px 8px;}
+    .cat-scroll::-webkit-scrollbar{display:none;}
+    .categories{display:flex;gap:8px;width:max-content;}
+    .cat-btn{
+      padding:6px 15px;border-radius:100px;
+      border:1.5px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.04);
+      color:#7a7a9a;font-size:.78rem;font-weight:700;
+      cursor:pointer;transition:all .15s;white-space:nowrap;
+      font-family:'Press Start 2P',monospace;font-size:.5rem;
+      display:flex;align-items:center;gap:6px;
+    }
+    .cat-btn .dot{width:6px;height:6px;border-radius:50%;background:var(--lc);flex-shrink:0;}
+    .cat-btn:hover{border-color:rgba(255,255,255,.2);color:#f0f0f8;}
+    .cat-btn.active{background:var(--lc);border-color:var(--lc);color:#fff;box-shadow:0 3px 14px rgba(0,0,0,.35);}
+    .cat-btn.active .dot{background:rgba(255,255,255,.55);}
+
+    /* ── Canvas ── */
+    canvas{
+      width:100%;max-width:480px;
+      display:block;
+      image-rendering:pixelated;
+      image-rendering:crisp-edges;
+    }
+
+    /* ── Quiz panel ── */
+    #quiz{
+      width:100%;
+      background:#0f0f22;
+      border-top:2px solid rgba(255,255,255,.06);
+      padding:14px 14px 20px;
+      display:flex;flex-direction:column;gap:12px;
+    }
+    #qbox{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:16px;padding:16px;
+      text-align:center;position:relative;
+    }
+    #qbox::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--lc);border-radius:16px 16px 0 0;transition:background .3s;}
+    #qchip{
+      font-size:.55rem;font-weight:700;font-family:'Press Start 2P',monospace;
+      color:var(--lc);background:var(--lc-bg);
+      display:inline-block;padding:3px 10px;border-radius:100px;
+      margin-bottom:8px;letter-spacing:.04em;
+    }
+    #qword{
+      font-family:'Noto Sans JP',sans-serif;
+      font-size:clamp(2.2rem,9vw,3rem);font-weight:700;
+      color:#1a1a2e;
+      background:#faf7f3;
+      border-radius:12px;padding:10px 20px 8px;
+      margin:6px auto;display:inline-block;
+      box-shadow:0 4px 12px rgba(0,0,0,.25);
+    }
+    #qread{font-family:'Noto Sans JP',sans-serif;font-size:.9rem;color:#8a8aaa;margin-top:5px;}
+    #qroma{font-size:.72rem;color:#6a6a8a;font-style:italic;font-weight:300;}
+
+    /* ── Option buttons ── */
+    #opts{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+    .opt{
+      min-height:58px;border-radius:14px;
+      border:2px solid rgba(255,255,255,.09);
+      background:rgba(255,255,255,.05);
+      color:#f0f0f8;font-size:clamp(.9rem,3.5vw,1.05rem);font-weight:700;
+      cursor:pointer;transition:all .12s;
+      font-family:'Noto Sans TC',sans-serif;
+      padding:10px 8px;line-height:1.4;
+    }
+    .opt:hover:not(:disabled){background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);transform:translateY(-2px);}
+    .opt:active:not(:disabled){transform:translateY(0);}
+    .opt.correct{background:#15803d;border-color:#16a34a;color:#fff;animation:cPop .3s;}
+    .opt.wrong{background:#b91c1c;border-color:#dc2626;color:#fff;animation:cShake .3s;}
+    .opt.reveal{background:rgba(21,128,61,.25);border-color:#16a34a;color:#86efac;}
+    .opt:disabled{opacity:.4;cursor:default;}
+
+    /* ── Example ── */
+    #exbtn{
+      padding:9px;border-radius:10px;
+      border:1.5px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.04);
+      color:#6a6a8a;font-size:.78rem;font-weight:500;
+      cursor:pointer;font-family:'Noto Sans TC',sans-serif;
+      transition:all .15s;
+    }
+    #exbtn:hover{color:#f0f0f8;border-color:rgba(255,255,255,.18);}
+    #extext{
+      display:none;padding:10px 14px;border-radius:10px;
+      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+      font-family:'Noto Sans JP',sans-serif;font-size:.85rem;
+      color:rgba(255,255,255,.45);line-height:1.8;text-align:center;
+      animation:fadeIn .2s;
+    }
+    #extext.show{display:block;}
+
+    /* ── Result overlay ── */
+    #overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.88);
+      display:flex;align-items:center;justify-content:center;
+      z-index:200;backdrop-filter:blur(10px);padding:20px;
+    }
+    #overlay[hidden]{display:none;}
+    #result{
+      background:#13131f;border-radius:24px;
+      padding:32px 24px;max-width:340px;width:100%;
+      border:2px solid rgba(255,255,255,.1);text-align:center;
+      animation:fadeIn .3s;
+    }
+    .res-stars{font-size:2.2rem;margin-bottom:10px;letter-spacing:4px;}
+    .res-title{font-size:1.1rem;font-weight:700;color:#f0f0f8;margin-bottom:6px;font-family:'Noto Sans TC',sans-serif;}
+    .res-sub{font-size:.8rem;color:#7a7a9a;margin-bottom:20px;font-family:'Noto Sans TC',sans-serif;}
+    .res-row{display:flex;gap:10px;justify-content:center;margin-bottom:18px;}
+    .res-stat{flex:1;background:rgba(255,255,255,.05);border-radius:12px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;}
+    .res-stat span{font-size:1.5rem;font-weight:700;color:#f0f0f8;}
+    .res-stat small{font-size:.6rem;color:#6a6a8a;text-transform:uppercase;letter-spacing:.06em;font-family:'Noto Sans TC',sans-serif;}
+    .res-btns{display:flex;gap:10px;}
+    .res-btn{
+      flex:1;padding:12px;border-radius:12px;
+      border:1.5px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.06);color:#f0f0f8;
+      font-size:.82rem;font-weight:700;cursor:pointer;
+      font-family:'Noto Sans TC',sans-serif;transition:all .15s;
+    }
+    .res-btn:hover{background:rgba(255,255,255,.12);}
+    .res-btn.prim{background:var(--lc);border-color:var(--lc);}
+    .res-btn.prim:hover{filter:brightness(1.1);}
+
+    @keyframes cPop{0%,100%{transform:scale(1);}45%{transform:scale(1.07);}}
+    @keyframes cShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-7px);}75%{transform:translateX(7px);}}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes statPop{0%,100%{transform:scale(1);}40%{transform:scale(1.4);}}
+
+    @media(max-width:360px){
+      .opt{font-size:.85rem;min-height:52px;}
+      #qword{font-size:2rem;}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="cat-scroll"><div class="categories" id="cats"></div></div>
+  <canvas id="c" width="480" height="220"></canvas>
+  <div id="quiz">
+    <div id="qbox">
+      <div id="qchip">JLPT N5</div>
+      <div><div id="qword">—</div></div>
+      <div id="qread"></div>
+      <div id="qroma"></div>
+    </div>
+    <div id="opts"></div>
+    <button id="exbtn" onclick="toggleEx()">💬 查看例句</button>
+    <div id="extext"></div>
+  </div>
+</div>
+
+<div id="overlay" hidden>
+  <div id="result">
+    <div class="res-stars" id="rStars">⭐⭐⭐</div>
+    <div class="res-title" id="rTitle">勝利！</div>
+    <div class="res-sub"   id="rSub"></div>
+    <div class="res-row">
+      <div class="res-stat"><span id="rRight">0</span><small>答對</small></div>
+      <div class="res-stat"><span id="rWrong">0</span><small>答錯</small></div>
+      <div class="res-stat"><span id="rStreak">0</span><small>最高連擊</small></div>
+    </div>
+    <div class="res-btns">
+      <button class="res-btn prim" onclick="restartGame()">🔄 再挑戰</button>
+      <button class="res-btn"      onclick="closeResult()">↩ 換等級</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  LEVEL METADATA
+// ═══════════════════════════════════════════════════════
+const LEVELS = {
+  N5:{label:'N5 入門',color:'#22c55e',bg:'rgba(34,197,94,.12)'},
+  N4:{label:'N4 基礎',color:'#3b82f6',bg:'rgba(59,130,246,.12)'},
+  N3:{label:'N3 中級',color:'#f59e0b',bg:'rgba(245,158,11,.12)'},
+  N2:{label:'N2 中高級',color:'#f97316',bg:'rgba(249,115,22,.12)'},
+  N1:{label:'N1 高級',color:'#ef4444',bg:'rgba(239,68,68,.12)'},
+};
+
+// ═══════════════════════════════════════════════════════
+//  VOCABULARY
+// ═══════════════════════════════════════════════════════
+const VOCAB = {
+N5:[
+  {w:'食べる',r:'たべる',  ro:'Taberu',    m:'吃',       ex:'晩ご飯を食べます。'},
+  {w:'飲む',  r:'のむ',    ro:'Nomu',      m:'喝',       ex:'水を飲みます。'},
+  {w:'行く',  r:'いく',    ro:'Iku',       m:'去、前往', ex:'学校に行きます。'},
+  {w:'来る',  r:'くる',    ro:'Kuru',      m:'來',       ex:'友達が来ます。'},
+  {w:'見る',  r:'みる',    ro:'Miru',      m:'看、觀看', ex:'映画を見ます。'},
+  {w:'聞く',  r:'きく',    ro:'Kiku',      m:'聽、問',   ex:'音楽を聞きます。'},
+  {w:'話す',  r:'はなす',  ro:'Hanasu',    m:'說話',     ex:'日本語で話します。'},
+  {w:'書く',  r:'かく',    ro:'Kaku',      m:'寫',       ex:'手紙を書きます。'},
+  {w:'読む',  r:'よむ',    ro:'Yomu',      m:'讀',       ex:'本を読みます。'},
+  {w:'買う',  r:'かう',    ro:'Kau',       m:'買',       ex:'服を買います。'},
+  {w:'起きる',r:'おきる',  ro:'Okiru',     m:'起床',     ex:'七時に起きます。'},
+  {w:'寝る',  r:'ねる',    ro:'Neru',      m:'睡覺',     ex:'十時に寝ます。'},
+  {w:'帰る',  r:'かえる',  ro:'Kaeru',     m:'回去',     ex:'家に帰ります。'},
+  {w:'使う',  r:'つかう',  ro:'Tsukau',    m:'使用',     ex:'スマホを使います。'},
+  {w:'入る',  r:'はいる',  ro:'Hairu',     m:'進入',     ex:'部屋に入ります。'},
+  {w:'出る',  r:'でる',    ro:'Deru',      m:'出去',     ex:'家を出ます。'},
+  {w:'水',    r:'みず',    ro:'Mizu',      m:'水',       ex:'水を一杯ください。'},
+  {w:'本',    r:'ほん',    ro:'Hon',       m:'書',       ex:'この本は面白いです。'},
+  {w:'車',    r:'くるま',  ro:'Kuruma',    m:'車子',     ex:'車で行きます。'},
+  {w:'犬',    r:'いぬ',    ro:'Inu',       m:'狗',       ex:'犬が好きです。'},
+  {w:'猫',    r:'ねこ',    ro:'Neko',      m:'貓',       ex:'猫を飼っています。'},
+  {w:'花',    r:'はな',    ro:'Hana',      m:'花',       ex:'きれいな花ですね。'},
+  {w:'魚',    r:'さかな',  ro:'Sakana',    m:'魚',       ex:'魚を料理します。'},
+  {w:'学校',  r:'がっこう',ro:'Gakkou',    m:'學校',     ex:'学校は楽しいです。'},
+  {w:'駅',    r:'えき',    ro:'Eki',       m:'車站',     ex:'駅まで歩きます。'},
+  {w:'お金',  r:'おかね',  ro:'Okane',     m:'錢',       ex:'お金がありません。'},
+  {w:'時間',  r:'じかん',  ro:'Jikan',     m:'時間',     ex:'時間がありますか？'},
+  {w:'友達',  r:'ともだち',ro:'Tomodachi', m:'朋友',     ex:'友達と遊びます。'},
+  {w:'今日',  r:'きょう',  ro:'Kyou',      m:'今天',     ex:'今日はいい天気です。'},
+  {w:'明日',  r:'あした',  ro:'Ashita',    m:'明天',     ex:'明日また来ます。'},
+  {w:'大きい',r:'おおきい',ro:'Ookii',     m:'大的',     ex:'この犬は大きいです。'},
+  {w:'小さい',r:'ちいさい',ro:'Chiisai',   m:'小的',     ex:'小さい花です。'},
+  {w:'高い',  r:'たかい',  ro:'Takai',     m:'高的、貴的',ex:'このカバンは高いです。'},
+  {w:'安い',  r:'やすい',  ro:'Yasui',     m:'便宜的',   ex:'安いレストランです。'},
+  {w:'新しい',r:'あたらしい',ro:'Atarashii',m:'新的',    ex:'新しい服を買いました。'},
+  {w:'古い',  r:'ふるい',  ro:'Furui',     m:'舊的',     ex:'古い本があります。'},
+  {w:'暑い',  r:'あつい',  ro:'Atsui',     m:'熱的',     ex:'夏は暑いです。'},
+  {w:'寒い',  r:'さむい',  ro:'Samui',     m:'冷的',     ex:'冬は寒いです。'},
+  {w:'好き',  r:'すき',    ro:'Suki',      m:'喜歡',     ex:'音楽が好きです。'},
+  {w:'嫌い',  r:'きらい',  ro:'Kirai',     m:'討厭',     ex:'野菜が嫌いです。'},
+],
+N4:[
+  {w:'練習',  r:'れんしゅう',ro:'Renshuu',  m:'練習',     ex:'毎日練習します。'},
+  {w:'便利',  r:'べんり',  ro:'Benri',     m:'方便',     ex:'スマホは便利です。'},
+  {w:'大切',  r:'たいせつ',ro:'Taisetsu',  m:'重要、珍貴',ex:'健康が大切です。'},
+  {w:'運動',  r:'うんどう',ro:'Undou',     m:'運動',     ex:'毎朝運動します。'},
+  {w:'旅行',  r:'りょこう',ro:'Ryokou',    m:'旅行',     ex:'日本に旅行しました。'},
+  {w:'料理',  r:'りょうり',ro:'Ryouri',    m:'料理、做菜',ex:'料理が得意です。'},
+  {w:'気持ち',r:'きもち',  ro:'Kimochi',   m:'心情、感覺',ex:'気持ちがいいですね。'},
+  {w:'有名',  r:'ゆうめい',ro:'Yuumei',    m:'有名的',   ex:'有名なお店です。'},
+  {w:'危ない',r:'あぶない',ro:'Abunai',    m:'危險的',   ex:'危ないから気をつけて！'},
+  {w:'経験',  r:'けいけん',ro:'Keiken',    m:'經驗',     ex:'いい経験になりました。'},
+  {w:'準備',  r:'じゅんび',ro:'Junbi',     m:'準備',     ex:'準備ができました。'},
+  {w:'説明',  r:'せつめい',ro:'Setsumei',  m:'說明',     ex:'説明してください。'},
+  {w:'発音',  r:'はつおん',ro:'Hatsuon',   m:'發音',     ex:'発音が難しいです。'},
+  {w:'文化',  r:'ぶんか',  ro:'Bunka',     m:'文化',     ex:'日本の文化です。'},
+  {w:'社会',  r:'しゃかい',ro:'Shakai',    m:'社會',     ex:'社会に出ます。'},
+  {w:'生活',  r:'せいかつ',ro:'Seikatsu',  m:'生活',     ex:'生活が便利です。'},
+  {w:'健康',  r:'けんこう',ro:'Kenkou',    m:'健康',     ex:'健康が一番です。'},
+  {w:'親切',  r:'しんせつ',ro:'Shinsetsu', m:'親切',     ex:'親切な人です。'},
+  {w:'正直',  r:'しょうじき',ro:'Shoujiki',m:'誠實',     ex:'正直に話します。'},
+  {w:'集める',r:'あつめる',ro:'Atsumeru',  m:'收集',     ex:'カードを集めます。'},
+  {w:'決める',r:'きめる',  ro:'Kimeru',    m:'決定',     ex:'何にするか決めます。'},
+  {w:'続ける',r:'つづける',ro:'Tsuzukeru', m:'繼續',     ex:'練習を続けます。'},
+  {w:'変わる',r:'かわる',  ro:'Kawaru',    m:'改變',     ex:'天気が変わります。'},
+  {w:'増える',r:'ふえる',  ro:'Fueru',     m:'增加',     ex:'友達が増えます。'},
+  {w:'自分',  r:'じぶん',  ro:'Jibun',     m:'自己',     ex:'自分でやります。'},
+  {w:'全部',  r:'ぜんぶ',  ro:'Zenbu',     m:'全部',     ex:'全部食べました。'},
+  {w:'特別',  r:'とくべつ',ro:'Tokubetsu', m:'特別',     ex:'特別な日です。'},
+  {w:'普通',  r:'ふつう',  ro:'Futsuu',    m:'普通',     ex:'普通のことです。'},
+  {w:'丁寧',  r:'ていねい',ro:'Teinei',    m:'禮貌、仔細',ex:'丁寧に書きます。'},
+  {w:'遅れる',r:'おくれる',ro:'Okureru',   m:'遲到',     ex:'遅れてすみません。'},
+  {w:'終わる',r:'おわる',  ro:'Owaru',     m:'結束',     ex:'仕事が終わります。'},
+  {w:'始まる',r:'はじまる',ro:'Hajimaru',  m:'開始',     ex:'授業が始まります。'},
+  {w:'予定',  r:'よてい',  ro:'Yotei',     m:'預定',     ex:'明日の予定は？'},
+  {w:'目標',  r:'もくひょう',ro:'Mokuhyou',m:'目標',     ex:'目標を決めます。'},
+  {w:'以外',  r:'いがい',  ro:'Igai',      m:'除此之外', ex:'それ以外はいいです。'},
+],
+N3:[
+  {w:'影響',  r:'えいきょう',ro:'Eikyou',  m:'影響',     ex:'環境に影響を与えます。'},
+  {w:'解決',  r:'かいけつ',ro:'Kaiketsu',  m:'解決',     ex:'問題を解決しました。'},
+  {w:'必要',  r:'ひつよう',ro:'Hitsuyou',  m:'必要',     ex:'練習が必要です。'},
+  {w:'重要',  r:'じゅうよう',ro:'Juuyou',  m:'重要',     ex:'これは重要な問題です。'},
+  {w:'意見',  r:'いけん',  ro:'Iken',      m:'意見、看法',ex:'意見を言ってください。'},
+  {w:'計画',  r:'けいかく',ro:'Keikaku',   m:'計畫',     ex:'計画を立てます。'},
+  {w:'失敗',  r:'しっぱい',ro:'Shippai',   m:'失敗',     ex:'失敗から学びます。'},
+  {w:'成功',  r:'せいこう',ro:'Seikou',    m:'成功',     ex:'ついに成功しました！'},
+  {w:'原因',  r:'げんいん',ro:"Gen'in",    m:'原因',     ex:'原因を調べます。'},
+  {w:'状況',  r:'じょうきょう',ro:'Joukyou',m:'狀況',    ex:'状況を確認します。'},
+  {w:'関係',  r:'かんけい',ro:'Kankei',    m:'關係',     ex:'二人の関係は複雑です。'},
+  {w:'目的',  r:'もくてき',ro:'Mokuteki',  m:'目的',     ex:'目的を明確にします。'},
+  {w:'方法',  r:'ほうほう',ro:'Houhou',    m:'方法',     ex:'方法を考えます。'},
+  {w:'理由',  r:'りゆう',  ro:'Riyuu',     m:'理由',     ex:'理由を説明します。'},
+  {w:'結果',  r:'けっか',  ro:'Kekka',     m:'結果',     ex:'結果を確認します。'},
+  {w:'問題',  r:'もんだい',ro:'Mondai',    m:'問題',     ex:'問題が起きました。'},
+  {w:'機会',  r:'きかい',  ro:'Kikai',     m:'機會',     ex:'機会があれば行きます。'},
+  {w:'変化',  r:'へんか',  ro:'Henka',     m:'變化',     ex:'大きな変化がありました。'},
+  {w:'発展',  r:'はってん',ro:'Hatten',    m:'發展',     ex:'技術が発展しています。'},
+  {w:'協力',  r:'きょうりょく',ro:'Kyouryoku',m:'合作',  ex:'みんなで協力します。'},
+  {w:'努力',  r:'どりょく',ro:'Doryoku',   m:'努力',     ex:'毎日努力しています。'},
+  {w:'習慣',  r:'しゅうかん',ro:'Shuukan', m:'習慣',     ex:'いい習慣を作ります。'},
+  {w:'集中',  r:'しゅうちゅう',ro:'Shuuchuu',m:'集中',   ex:'勉強に集中します。'},
+  {w:'判断',  r:'はんだん',ro:'Handan',    m:'判斷',     ex:'状況を判断します。'},
+  {w:'確認',  r:'かくにん',ro:'Kakunin',   m:'確認',     ex:'内容を確認します。'},
+  {w:'管理',  r:'かんり',  ro:'Kanri',     m:'管理',     ex:'時間を管理します。'},
+  {w:'調査',  r:'ちょうさ',ro:'Chousa',    m:'調查',     ex:'現地を調査します。'},
+  {w:'改善',  r:'かいぜん',ro:'Kaizen',    m:'改善',     ex:'サービスを改善します。'},
+  {w:'参加',  r:'さんか',  ro:'Sanka',     m:'參加',     ex:'イベントに参加します。'},
+  {w:'実現',  r:'じつげん',ro:'Jitsugen',  m:'實現',     ex:'夢を実現させます。'},
+],
+N2:[
+  {w:'貢献',  r:'こうけん',ro:'Kouken',    m:'貢獻',     ex:'社会に貢献します。'},
+  {w:'把握',  r:'はあく',  ro:'Haaku',     m:'掌握',     ex:'状況を把握します。'},
+  {w:'傾向',  r:'けいこう',ro:'Keikou',    m:'傾向',     ex:'最近の傾向を分析します。'},
+  {w:'認識',  r:'にんしき',ro:'Ninshiki',  m:'認識',     ex:'問題を認識します。'},
+  {w:'主張',  r:'しゅちょう',ro:'Shuchou', m:'主張',     ex:'自分の主張を述べます。'},
+  {w:'根拠',  r:'こんきょ',ro:'Konkyo',    m:'根據',     ex:'根拠を示してください。'},
+  {w:'背景',  r:'はいけい',ro:'Haikei',    m:'背景',     ex:'歴史的背景を考えます。'},
+  {w:'概念',  r:'がいねん',ro:'Gainen',    m:'概念',     ex:'基本的な概念を理解します。'},
+  {w:'批判',  r:'ひはん',  ro:'Hihan',     m:'批評',     ex:'建設的な批判を受け入れます。'},
+  {w:'促進',  r:'そくしん',ro:'Sokushin',  m:'促進',     ex:'経済発展を促進します。'},
+  {w:'検討',  r:'けんとう',ro:'Kentou',    m:'研議',     ex:'この案を検討します。'},
+  {w:'維持',  r:'いじ',    ro:'Iji',       m:'維持',     ex:'現状を維持します。'},
+  {w:'対応',  r:'たいおう',ro:'Taiou',     m:'應對',     ex:'問題に対応します。'},
+  {w:'提案',  r:'ていあん',ro:'Teian',     m:'提案',     ex:'新しい提案をします。'},
+  {w:'評価',  r:'ひょうか',ro:'Hyouka',    m:'評價',     ex:'結果を評価します。'},
+  {w:'課題',  r:'かだい',  ro:'Kadai',     m:'課題',     ex:'課題を解決します。'},
+  {w:'分析',  r:'ぶんせき',ro:'Bunseki',   m:'分析',     ex:'データを分析します。'},
+  {w:'実施',  r:'じっし',  ro:'Jisshi',    m:'實施',     ex:'計画を実施します。'},
+  {w:'導入',  r:'どうにゅう',ro:'Dounyuu', m:'導入',     ex:'新技術を導入します。'},
+  {w:'推進',  r:'すいしん',ro:'Suishin',   m:'推進',     ex:'改革を推進します。'},
+  {w:'構築',  r:'こうちく',ro:'Kouchiku',  m:'建構',     ex:'システムを構築します。'},
+  {w:'展開',  r:'てんかい',ro:'Tenkai',    m:'展開',     ex:'議論を展開します。'},
+  {w:'支援',  r:'しえん',  ro:'Shien',     m:'支援',     ex:'活動を支援します。'},
+  {w:'活用',  r:'かつよう',ro:'Katsuyou',  m:'活用',     ex:'資源を活用します。'},
+  {w:'整備',  r:'せいび',  ro:'Seibi',     m:'整備',     ex:'制度を整備します。'},
+],
+N1:[
+  {w:'洞察',  r:'どうさつ',ro:'Dousatsu',  m:'洞察力',   ex:'鋭い洞察力を持っています。'},
+  {w:'矛盾',  r:'むじゅん',ro:'Mujun',     m:'矛盾',     ex:'彼の話には矛盾があります。'},
+  {w:'本質',  r:'ほんしつ',ro:'Honshitsu', m:'本質',     ex:'問題の本質を見極めます。'},
+  {w:'曖昧',  r:'あいまい',ro:'Aimai',     m:'模糊',     ex:'曖昧な表現を避けます。'},
+  {w:'抽象',  r:'ちゅうしょう',ro:'Chuushou',m:'抽象',   ex:'抽象的な概念を具体化します。'},
+  {w:'普遍',  r:'ふへん',  ro:'Fuhen',     m:'普遍',     ex:'普遍的な真理を探します。'},
+  {w:'逆説',  r:'ぎゃくせつ',ro:'Gyakusetsu',m:'悖論',   ex:'逆説的な結論に達しました。'},
+  {w:'斬新',  r:'ざんしん',ro:'Zanshin',   m:'嶄新',     ex:'斬新なアイデアが必要です。'},
+  {w:'憂慮',  r:'ゆうりょ',ro:'Yuuryo',    m:'憂慮',     ex:'将来を憂慮しています。'},
+  {w:'隔絶',  r:'かくぜつ',ro:'Kakuzetsu', m:'隔絕',     ex:'社会から隔絶された生活。'},
+  {w:'懸念',  r:'けねん',  ro:'Kenen',     m:'顧慮',     ex:'安全性への懸念があります。'},
+  {w:'崇高',  r:'すうこう',ro:'Suukou',    m:'崇高',     ex:'崇高な精神を持っています。'},
+  {w:'欺瞞',  r:'ぎまん',  ro:'Giman',     m:'欺騙',     ex:'欺瞞に満ちた言葉です。'},
+  {w:'忖度',  r:'そんたく',ro:'Sontaku',   m:'揣摩上意', ex:'忖度せずに意見を言います。'},
+  {w:'俯瞰',  r:'ふかん',  ro:'Fukan',     m:'俯瞰',     ex:'問題を俯瞰的に見ます。'},
+  {w:'脆弱',  r:'ぜいじゃく',ro:'Zeijaku', m:'脆弱',     ex:'脆弱なシステムです。'},
+  {w:'嗜好',  r:'しこう',  ro:'Shikou',    m:'嗜好',     ex:'個人の嗜好があります。'},
+  {w:'逸脱',  r:'いつだつ',ro:'Itsudatsu', m:'偏離',     ex:'ルールを逸脱しました。'},
+  {w:'喚起',  r:'かんき',  ro:'Kanki',     m:'喚起',     ex:'注意を喚起します。'},
+  {w:'乖離',  r:'かいり',  ro:'Kairi',     m:'乖離',     ex:'理想と現実が乖離しています。'},
+],
+};
+
+// ═══════════════════════════════════════════════════════
+//  CANVAS + GAME STATE
+// ═══════════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const G = 4; // game pixel size
+
+const GS = {
+  level: 'N5',
+  deck: [], idx: 0,
+  heroHP: 3,    // hearts
+  dragonHP: 100,
+  score: 0, wrong: 0, streak: 0, maxStreak: 0,
+  phase: 'quiz', // quiz | hero_atk | dragon_atk | win | lose
+  animT: 0,
+  vfx: [],       // {text,x,y,color,life,maxLife}
+  lastCrit: false,
+  screenFlash: 0, screenFlashColor: 'rgba(255,255,255,0)',
+  clouds: [{x:60,y:28,w:40,sp:.4},{x:200,y:18,w:55,sp:.3},{x:380,y:32,w:45,sp:.35},{x:490,y:20,w:38,sp:.28}],
+};
+
+// ═══════════════════════════════════════════════════════
+//  BACKGROUND
+// ═══════════════════════════════════════════════════════
+function drawBG() {
+  // Sky gradient
+  const grad = ctx.createLinearGradient(0,0,0,175);
+  grad.addColorStop(0, '#0a0a2e');
+  grad.addColorStop(1, '#1a1040');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,480,175);
+
+  // Stars (static)
+  ctx.fillStyle = '#ffffff';
+  [[22,12],[75,8],[130,20],[185,6],[240,15],[300,9],[355,22],[410,7],[455,18],[40,35],[160,30],[320,28],[470,33]].forEach(([sx,sy])=>{
+    ctx.fillRect(sx,sy,2,2);
+  });
+  // Dim stars
+  ctx.fillStyle = 'rgba(255,255,255,.4)';
+  [[55,22],[105,14],[220,25],[280,18],[390,30],[450,12]].forEach(([sx,sy])=>{
+    ctx.fillRect(sx,sy,1,1);
+  });
+
+  // Clouds (animated)
+  GS.clouds.forEach(cl => {
+    ctx.fillStyle = 'rgba(200,200,255,0.22)';
+    ctx.fillRect(cl.x, cl.y,         cl.w,      8);
+    ctx.fillRect(cl.x-4, cl.y+4,     cl.w+8,    8);
+    ctx.fillRect(cl.x+4, cl.y+8,     cl.w-8,    5);
+  });
+
+  // Mountains
+  ctx.fillStyle = '#12124a';
+  [[60,55,70],[170,45,90],[290,50,80],[400,40,100],[470,55,60]].forEach(([mx,mh,mw])=>{
+    for(let i=0;i<mh;i+=G){
+      const w = Math.floor((i/mh)*mw);
+      ctx.fillRect(mx-w/2, 150-mh+i, w, G);
+    }
+  });
+
+  // Ground
+  ctx.fillStyle = '#1a3a1a';
+  ctx.fillRect(0,175,480,45);
+  ctx.fillStyle = '#1e4a1e';
+  ctx.fillRect(0,175,480,G);
+  ctx.fillStyle = '#16301a';
+  ctx.fillRect(0,179,480,G);
+
+  // Grass tufts
+  ctx.fillStyle = '#22612a';
+  for(let gx=10;gx<480;gx+=22){
+    ctx.fillRect(gx, 175, 3, 4);
+    ctx.fillRect(gx+5, 175, 2, 3);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  HERO SPRITE
+// ═══════════════════════════════════════════════════════
+// Anchor = top-left. G=4.  10G wide × 13G tall = 40×52px
+// Hero feet at anchor_y + 13G = anchor_y + 52
+function drawHero() {
+  const phase = GS.phase, animT = GS.animT;
+  let hx = 48;
+  const hy = 128; // top-left anchor y → feet at 180
+
+  // Lunge during attack
+  if (phase === 'hero_atk') {
+    const t = Math.min(1, animT / 800);
+    const lunge = t < 0.45 ? (t/0.45)*36 : ((1-t)/0.55)*36;
+    hx += Math.round(lunge);
+  }
+
+  // Hurt flash (flicker off every 80ms during dragon attack)
+  if (phase === 'dragon_atk' && Math.floor(animT/80)%2===0) return;
+
+  const p = (c,r,w,h,col) => {
+    ctx.fillStyle = col;
+    ctx.fillRect(hx+c*G, hy+r*G, w*G, h*G);
+  };
+
+  // HELMET
+  p(2,0, 4,1, '#c8c8c8');
+  p(1,1, 6,1, '#c0c0c0');
+  p(5,1, 1,1, '#888');   // visor
+  p(6,1, 1,1, '#666');
+
+  // FACE
+  p(2,2, 3,2, '#e8b88a');
+  p(3,2, 1,1, '#333');   // eye
+  p(2,3, 1,1, '#c8886a');// chin shadow
+
+  // BODY ARMOR
+  p(1,4, 5,3, '#3b82f6');
+  p(5,4, 1,3, '#1d4ed8'); // right shadow
+  p(1,7, 5,1, '#fbbf24'); // belt
+  p(1,8, 5,1, '#2563eb'); // lower body
+
+  // SHIELD (left)
+  p(0,4, 1,5, '#dc2626');
+  p(0,5, 1,1, '#fde047'); // emblem
+  p(0,8, 1,1, '#991b1b'); // base
+
+  // SWORD
+  const swordUp = phase==='hero_atk' && animT < 520;
+  if (swordUp) {
+    // Raised blade
+    p(7,-4,1,6, '#f0f0f0');
+    p(8,-3,1,5, '#b0b0b0');
+    p(6, 1,2,1, '#fbbf24'); // guard
+    p(6, 2,1,1, '#888');    // pommel
+  } else {
+    // At rest
+    p(7,2, 1,1, '#888');    // pommel
+    p(6,3, 2,1, '#fbbf24'); // guard
+    p(7,3, 1,7, '#f0f0f0'); // blade
+    p(8,3, 1,6, '#b0b0b0');
+  }
+
+  // LEGS
+  p(1,9, 2,4, '#1e1b4b');
+  p(4,9, 2,4, '#1e1b4b');
+
+  // BOOTS
+  p(0,12,3,1, '#374151');
+  p(4,12,3,1, '#374151');
+
+  // WALK BOB (idle only)
+  if (phase === 'quiz') {
+    const bob = Math.floor(Date.now()/400)%2;
+    if (bob) {
+      // slight crouch - redraw feet 1px lower (just leave as is, slight visual diff via timing)
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  DRAGON SPRITE
+// ═══════════════════════════════════════════════════════
+// Anchor = top-left. Dragon faces LEFT.
+// 25G wide × 16G tall = 100×64px
+// dragon feet at anchor_y + 16G = anchor_y + 64
+function drawDragon() {
+  const phase = GS.phase, animT = GS.animT, hp = GS.dragonHP;
+  let dx = 275;
+  const dy = 116; // top-left anchor y → feet at 180
+
+  // Recoil during hero attack
+  if (phase === 'hero_atk') {
+    const t = Math.min(1, animT/800);
+    const recoil = t < 0.3 ? (t/0.3)*8 : ((1-t)/0.7)*8;
+    dx += Math.round(recoil);
+  }
+
+  // Lurch forward during own attack
+  if (phase === 'dragon_atk') {
+    const t = Math.min(1, animT/800);
+    const lunge = t < 0.35 ? (t/0.35)*10 : ((1-t)/0.65)*10;
+    dx -= Math.round(lunge);
+  }
+
+  const p = (c,r,w,h,col) => {
+    ctx.fillStyle = col;
+    ctx.fillRect(dx+c*G, dy+r*G, w*G, h*G);
+  };
+
+  // HURT FLASH overlay
+  if (phase === 'hero_atk' && Math.floor(animT/90)%2===0) {
+    ctx.fillStyle = 'rgba(255,80,80,.55)';
+    ctx.fillRect(dx, dy, 25*G, 16*G);
+  }
+
+  // WING (top)
+  const wingFlap = Math.floor(Date.now()/350)%2;
+  p(4,0, 13,1, '#166534');
+  p(3, wingFlap?1:0, 15, wingFlap?3:4, '#15803d');
+  p(4, wingFlap?4:3, 13,1, '#16a34a');
+
+  // TAIL (right)
+  p(19,7,  5,2, '#16a34a');
+  p(21,9,  4,2, '#15803d');
+  p(23,11, 2,1, '#166534');
+
+  // BODY
+  p(5,4,  14,9, '#16a34a');
+  p(6,3,  13,1, '#16a34a');
+  p(7,2,   9,1, '#22d45e'); // top highlight
+
+  // BELLY
+  p(6,7,  10,5, '#4ade80');
+  p(7,8,   8,3, '#6ee7a0'); // belly shine
+
+  // LEGS & CLAWS
+  p(8,13,  3,2, '#16a34a');
+  p(12,13, 3,2, '#16a34a');
+  [8,9,10,12,13,14].forEach(c => p(c,15,1,1,'#166534'));
+
+  // HEAD (left side, faces left)
+  p(0,4,  7,8, '#16a34a');
+  p(0,3,  5,1, '#16a34a');
+  p(1,2,  3,1, '#16a34a');
+
+  // LOWER JAW
+  p(0,10, 7,2, '#15803d');
+
+  // HORNS
+  p(2,0,  1,3, '#84cc16');
+  p(4,1,  1,2, '#a3e635');
+
+  // EYE
+  p(3,5,  2,2, '#fde047');
+  p(3,5,  1,1, '#fff');   // highlight
+  // Pupil changes based on HP
+  if (hp > 50) {
+    p(4,6,  1,1, '#111'); // normal slit
+  } else if (hp > 30) {
+    p(3,6,  2,1, '#111'); // wide scared
+  } else {
+    p(3,5,  2,2, '#111'); // eyes x'd out (nearly dead)
+    p(3,5,  1,1, '#f00');
+    p(4,6,  1,1, '#f00');
+  }
+
+  // TEETH (upper)
+  p(0,9,  1,1, '#f8fafc');
+  p(1,9,  1,1, '#f8fafc');
+  p(2,9,  1,1, '#f8fafc');
+  // Lower
+  p(0,11, 1,1, '#f8fafc');
+  p(2,11, 1,1, '#f8fafc');
+
+  // NOSTRIL
+  p(1,7,  1,1, '#166534');
+
+  // DAMAGE MARKS
+  if (hp <= 70) {
+    p(10,7,1,1,'#166534'); p(11,8,1,1,'#166534');
+    p(10,8,1,1,'#166534'); p(11,7,1,1,'#166534');
+  }
+  if (hp <= 50) {
+    p(14,6,1,1,'#166534'); p(15,7,1,1,'#166534');
+    p(14,7,1,1,'#166534'); p(15,6,1,1,'#166534');
+  }
+  if (hp <= 40) {
+    // Sweat drops (comedic)
+    p(4,7,1,3,'#7dd3fc');
+    p(5,9,1,1,'#7dd3fc');
+  }
+  if (hp <= 30) {
+    // Dragon nearly defeated - droopy
+    p(3,5,2,2,'#888'); // eyes droopy (override)
+    p(4,7,1,3,'#93c5fd');
+    p(5,9,1,2,'#93c5fd');
+  }
+
+  // FIRE BREATH
+  if (phase === 'dragon_atk') {
+    const t = Math.min(1, animT / 800);
+    if (t > 0.18) {
+      const prog = Math.min(1, (t - 0.18) / 0.48);
+      const fl = Math.floor(prog * 20); // max 20G = 80px
+      for (let i = 0; i < fl; i++) {
+        const fi = fl - i;
+        const col = fi > 13 ? '#fde047' : fi > 8 ? '#f97316' : '#ef4444';
+        ctx.fillStyle = col;
+        ctx.fillRect(dx - (i+1)*G, dy + 9*G, G, 2*G);
+        if (fi > 6) {
+          ctx.fillRect(dx-(i+1)*G, dy+8*G, G, G);
+          ctx.fillRect(dx-(i+1)*G, dy+11*G, G, G);
+        }
+        if (fi > 10) {
+          ctx.fillRect(dx-(i+1)*G, dy+7*G, G, G);
+          ctx.fillRect(dx-(i+1)*G, dy+12*G, G, G);
+        }
+      }
+      // Fire tip
+      if (fl > 10) {
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(dx-(fl+2)*G, dy+8*G, G, 4*G);
+        ctx.fillRect(dx-(fl+3)*G, dy+9*G, G, 2*G);
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  HUD (HP bars, hearts, score)
+// ═══════════════════════════════════════════════════════
+function drawHUD() {
+  const hp = GS.dragonHP;
+
+  // ── Dragon HP bar (top-right) ──
+  const bw = 148, bh = 10;
+  const bx = 480 - bw - 14, by = 10;
+  // Shadow
+  ctx.fillStyle = '#111';
+  ctx.fillRect(bx-2, by-2, bw+4, bh+4);
+  // BG
+  ctx.fillStyle = '#3a0000';
+  ctx.fillRect(bx, by, bw, bh);
+  // Fill
+  const fillW = Math.round(bw * hp/100);
+  ctx.fillStyle = hp > 60 ? '#22c55e' : hp > 30 ? '#eab308' : '#ef4444';
+  ctx.fillRect(bx, by, fillW, bh);
+  // 30% marker
+  const marker30 = bx + Math.round(bw * 0.3);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(marker30, by-2, 2, bh+4);
+  // Label
+  ctx.fillStyle = '#ddd';
+  ctx.font = '6px "Press Start 2P", monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('DRAGON  ' + hp + '%', bx - 4, by + bh - 1);
+  ctx.textAlign = 'left';
+
+  // Win zone label
+  ctx.fillStyle = 'rgba(255,220,0,.6)';
+  ctx.font = '5px "Press Start 2P", monospace';
+  ctx.fillText('WIN', bx - 2, by - 4);
+
+  // ── Hero hearts (top-left) ──
+  ctx.font = '14px serif';
+  for (let i = 0; i < 3; i++) {
+    ctx.fillText(i < GS.heroHP ? '❤' : '🖤', 12 + i*22, 24);
+  }
+
+  // ── Streak / combo ──
+  if (GS.streak >= 2) {
+    ctx.fillStyle = GS.streak >= 5 ? '#f97316' : '#fbbf24';
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillText('COMBO x' + GS.streak + '!', 12, 42);
+  }
+
+  // ── Score ──
+  ctx.fillStyle = '#6a6a8a';
+  ctx.font = '5px "Press Start 2P", monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('SCORE:' + GS.score, 468, 42);
+  ctx.textAlign = 'left';
+}
+
+// ═══════════════════════════════════════════════════════
+//  VFX (floating damage numbers, slash)
+// ═══════════════════════════════════════════════════════
+function spawnVFX(text, x, y, color='#fde047') {
+  GS.vfx.push({text, x, y, color, life:1000, maxLife:1000});
+}
+
+function drawVFX() {
+  GS.vfx = GS.vfx.filter(v => {
+    v.life -= 16;
+    if (v.life <= 0) return false;
+    const alpha = v.life / v.maxLife;
+    const floatY = (1 - alpha) * 35;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = v.color;
+    ctx.font = 'bold 9px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(v.text, v.x, v.y - floatY);
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
+    return true;
+  });
+
+  // Slash effect during hero attack
+  if (GS.phase === 'hero_atk') {
+    const t = Math.min(1, GS.animT / 800);
+    if (t > 0.35 && t < 0.7) {
+      const alpha = 1 - (t - 0.35) / 0.35;
+      ctx.globalAlpha = alpha * 0.9;
+      // Draw X slash on dragon
+      const sx = 330, sy = 150;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(sx-20, sy-20); ctx.lineTo(sx+20, sy+20);
+      ctx.moveTo(sx+20, sy-20); ctx.lineTo(sx-20, sy+20);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  WIN / LOSE SCREENS (on canvas)
+// ═══════════════════════════════════════════════════════
+function drawWinScreen() {
+  ctx.fillStyle = 'rgba(0,0,0,.65)';
+  ctx.fillRect(0,0,480,220);
+
+  const t = Math.min(1, GS.animT / 600);
+  ctx.globalAlpha = t;
+
+  // Gold border
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(40, 50, 400, 120);
+  ctx.fillStyle = 'rgba(20,10,0,.9)';
+  ctx.fillRect(42, 52, 396, 116);
+
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 20px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('VICTORY!', 240, 100);
+  ctx.fillStyle = '#f0f0f8';
+  ctx.font = '8px "Press Start 2P", monospace';
+  ctx.fillText('龍被打倒了！', 240, 125);
+  ctx.fillText('巨龍的力量已被封印', 240, 145);
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'left';
+}
+
+function drawLoseScreen() {
+  ctx.fillStyle = 'rgba(0,0,0,.72)';
+  ctx.fillRect(0,0,480,220);
+
+  const t = Math.min(1, GS.animT / 600);
+  ctx.globalAlpha = t;
+
+  ctx.strokeStyle = '#dc2626';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(40, 50, 400, 120);
+  ctx.fillStyle = 'rgba(20,0,0,.9)';
+  ctx.fillRect(42, 52, 396, 116);
+
+  ctx.fillStyle = '#ef4444';
+  ctx.font = 'bold 16px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('GAME OVER', 240, 100);
+  ctx.fillStyle = '#f0f0f8';
+  ctx.font = '8px "Press Start 2P", monospace';
+  ctx.fillText('勇者倒下了...', 240, 125);
+  ctx.fillText('請再試一次！', 240, 145);
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'left';
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCREEN FLASH
+// ═══════════════════════════════════════════════════════
+function drawScreenFlash() {
+  if (GS.screenFlash > 0) {
+    ctx.fillStyle = GS.screenFlashColor;
+    ctx.globalAlpha = GS.screenFlash;
+    ctx.fillRect(0,0,480,220);
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════
+function render() {
+  ctx.clearRect(0,0,480,220);
+  drawBG();
+  drawHero();
+  drawDragon();
+  drawHUD();
+  drawVFX();
+  drawScreenFlash();
+  if (GS.phase === 'win')  drawWinScreen();
+  if (GS.phase === 'lose') drawLoseScreen();
+}
+
+// ═══════════════════════════════════════════════════════
+//  GAME LOOP
+// ═══════════════════════════════════════════════════════
+let lastT = 0;
+function loop(t) {
+  const dt = Math.min(t - lastT, 80);
+  lastT = t;
+
+  // Move clouds
+  GS.clouds.forEach(cl => {
+    cl.x -= cl.sp;
+    if (cl.x + cl.w < -10) cl.x = 490;
+  });
+
+  // Screen flash decay
+  if (GS.screenFlash > 0) GS.screenFlash = Math.max(0, GS.screenFlash - dt * 0.004);
+
+  // Animation timer
+  if (GS.phase === 'hero_atk' || GS.phase === 'dragon_atk') {
+    GS.animT += dt;
+    if (GS.animT >= 900) {
+      GS.animT = 0;
+      if (GS.dragonHP <= 30) {
+        GS.phase = 'win';
+        setTimeout(showResult, 1800);
+      } else if (GS.heroHP <= 0) {
+        GS.phase = 'lose';
+        setTimeout(showResult, 1800);
+      } else {
+        GS.phase = 'quiz';
+        nextQuestion();
+      }
+    }
+  } else if (GS.phase === 'win' || GS.phase === 'lose') {
+    GS.animT += dt;
+  }
+
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ═══════════════════════════════════════════════════════
+//  QUIZ LOGIC
+// ═══════════════════════════════════════════════════════
+function shuffle(arr) {
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function getOptions(card, pool) {
+  const distractors = pool
+    .filter(c => c.m !== card.m)
+    .sort(() => Math.random()-.5)
+    .slice(0,3)
+    .map(c => c.m);
+  return shuffle([...distractors, card.m]);
+}
+
+function renderQuestion() {
+  if (GS.idx >= GS.deck.length) { showResult(); return; }
+  const card = GS.deck[GS.idx];
+  const lm = LEVELS[GS.level];
+
+  document.getElementById('qchip').textContent = 'JLPT ' + GS.level;
+  document.getElementById('qword').textContent  = card.w;
+  document.getElementById('qread').textContent  = card.r;
+  document.getElementById('qroma').textContent  = card.ro;
+  document.getElementById('extext').textContent = card.ex;
+  document.getElementById('extext').classList.remove('show');
+  document.getElementById('exbtn').textContent = '💬 查看例句';
+
+  // Options
+  const opts = getOptions(card, VOCAB[GS.level]);
+  const grid = document.getElementById('opts');
+  grid.innerHTML = '';
+  opts.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = opt;
+    btn.onclick = () => handleAnswer(btn, opt, card.m);
+    grid.appendChild(btn);
+  });
+}
+
+function nextQuestion() {
+  GS.idx++;
+  if (GS.idx >= GS.deck.length) {
+    // All done
+    GS.phase = 'win';
+    setTimeout(showResult, 1800);
+    return;
+  }
+  renderQuestion();
+}
+
+function handleAnswer(btn, chosen, correct) {
+  if (GS.phase !== 'quiz') return;
+
+  const allBtns = document.querySelectorAll('.opt');
+  allBtns.forEach(b => b.disabled = true);
+
+  if (chosen === correct) {
+    btn.classList.add('correct');
+
+    // Crit? (15% chance)
+    const crit = Math.random() < 0.15;
+    const dmg  = (10 + Math.floor(Math.random()*8)) * (crit ? 2 : 1);
+    GS.dragonHP = Math.max(0, GS.dragonHP - dmg);
+    GS.score++;
+    GS.streak++;
+    if (GS.streak > GS.maxStreak) GS.maxStreak = GS.streak;
+
+    // VFX
+    spawnVFX((crit ? '💥 CRITICAL! ' : '') + '-' + dmg, 345, 160, crit ? '#f97316' : '#fde047');
+    GS.screenFlash = 0.25;
+    GS.screenFlashColor = 'rgba(255,255,180,.8)';
+    GS.phase = 'hero_atk';
+    GS.animT = 0;
+    updateStatsUI();
+  } else {
+    btn.classList.add('wrong');
+    allBtns.forEach(b => { if (b.textContent === correct) b.classList.add('reveal'); });
+
+    GS.heroHP = Math.max(0, GS.heroHP - 1);
+    GS.wrong++;
+    GS.streak = 0;
+
+    spawnVFX('MISS!', 90, 150, '#ef4444');
+    GS.screenFlash = 0.35;
+    GS.screenFlashColor = 'rgba(200,0,0,.7)';
+    GS.phase = 'dragon_atk';
+    GS.animT = 0;
+    updateStatsUI();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════
+function toggleEx() {
+  const t = document.getElementById('extext');
+  const b = document.getElementById('exbtn');
+  t.classList.toggle('show');
+  b.textContent = t.classList.contains('show') ? '💬 隱藏例句' : '💬 查看例句';
+}
+
+function setLevelColor(key) {
+  const l = LEVELS[key];
+  document.documentElement.style.setProperty('--lc', l.color);
+  document.documentElement.style.setProperty('--lc-bg', l.bg);
+}
+
+function updateStatsUI() { /* stats shown on canvas */ }
+
+function startGame() {
+  setLevelColor(GS.level);
+  GS.deck = shuffle([...VOCAB[GS.level]]);
+  GS.idx = 0;
+  GS.heroHP = 3;
+  GS.dragonHP = 100;
+  GS.score = 0; GS.wrong = 0; GS.streak = 0; GS.maxStreak = 0;
+  GS.phase = 'quiz';
+  GS.animT = 0;
+  GS.vfx = [];
+  GS.screenFlash = 0;
+  document.getElementById('overlay').hidden = true;
+  renderQuestion();
+}
+
+function selectLevel(key) {
+  GS.level = key;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.key===key));
+  startGame();
+}
+
+function restartGame() {
+  document.getElementById('overlay').hidden = true;
+  startGame();
+}
+
+function closeResult() {
+  document.getElementById('overlay').hidden = true;
+  startGame();
+}
+
+function showResult() {
+  const total = GS.score + GS.wrong;
+  const pct   = total > 0 ? Math.round(GS.score / total * 100) : 0;
+  const won   = GS.dragonHP <= 30 || (GS.phase === 'win');
+
+  let stars = '', title = '', sub = '';
+  if (!won) {
+    stars = '💀'; title = '再接再厲！'; sub = '下次一定能打敗巨龍！';
+  } else if (pct >= 90) {
+    stars = '⭐⭐⭐'; title = '完美勝利！'; sub = '你是最強的勇者！';
+  } else if (pct >= 70) {
+    stars = '⭐⭐'; title = '勝利！'; sub = '龍被打倒了！';
+  } else {
+    stars = '⭐'; title = '辛苦了！'; sub = '勉強打敗了巨龍…';
+  }
+
+  document.getElementById('rStars').textContent   = stars;
+  document.getElementById('rTitle').textContent   = title;
+  document.getElementById('rSub').textContent     = sub;
+  document.getElementById('rRight').textContent   = GS.score;
+  document.getElementById('rWrong').textContent   = GS.wrong;
+  document.getElementById('rStreak').textContent  = GS.maxStreak;
+  document.getElementById('overlay').hidden = false;
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+function buildTabs() {
+  const catsDiv = document.getElementById('cats');
+  Object.entries(LEVELS).forEach(([key, meta], i) => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn' + (i === 0 ? ' active' : '');
+    btn.style.setProperty('--lc', meta.color);
+    btn.dataset.key = key;
+    btn.innerHTML = `<span class="dot"></span>${meta.label}`;
+    btn.onclick = () => selectLevel(key);
+    catsDiv.appendChild(btn);
+  });
+}
+
+document.fonts.ready.then(() => {
+  buildTabs();
+  startGame();
+  requestAnimationFrame(t => { lastT = t; requestAnimationFrame(loop); });
+});
+
+// Keyboard: 1-4 = answers
+document.addEventListener('keydown', e => {
+  if (GS.phase !== 'quiz') return;
+  const map = {'1':0,'2':1,'3':2,'4':3};
+  if (e.key in map) {
+    const btns = document.querySelectorAll('.opt:not(:disabled)');
+    if (btns[map[e.key]]) btns[map[e.key]].click();
+  }
+  if (e.key === 'e' || e.key === 'E') toggleEx();
+});
+</script>
+</body>
+</html>
